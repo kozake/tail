@@ -52,7 +52,7 @@ public final class Forward {
         System.out.flush();
     }
 
-    private static void rlines(File file, FileInputStream fis, long off) {
+    private static void rlines(File file, FileInputStream fis, long off) throws IOException {
 
         int i;
 
@@ -60,10 +60,7 @@ public final class Forward {
         if (size == 0) {
             return;
         }
-
-//        map.start = NULL;
-//        map.fd = fileno(fp);
-//        map.mapoff = map.maxoff = size;
+        FileMap map = new FileMap(file, fis);
 
     	/*
     	 * Last char is special, ignore whether newline or not. Note that
@@ -71,32 +68,25 @@ public final class Forward {
 	     */
         long curoff = size - 2;
         while (curoff >= 0) {
-            if (curoff < map.mapoff && maparound(&map, curoff) != 0) {
-                ierr(fn);
-                return;
+            if (curoff < map.getCurrOffset()) {
+                map.around(curoff);
             }
-            for (i = curoff - map.mapoff; i >= 0; i--)
-                if (map.start[i] == '\n' && --off == 0)
+            for (i = (int) (curoff - map.getCurrOffset()); i >= 0; i--) {
+                if (map.read(i) == '\n' && --off == 0) {
                     break;
+                }
+            }
     		/* `i' is either the map offset of a '\n', or -1. */
-            curoff = map.mapoff + i;
-            if (i >= 0)
+            curoff = map.getCurrOffset() + i;
+            if (i >= 0) {
                 break;
+            }
         }
         curoff++;
-        if (mapprint(&map, curoff, size - curoff) != 0) {
-            ierr(fn);
-            exit(1);
-        }
+        map.print(curoff, (int) (size - curoff));
 
     	/* Set the file pointer to reflect the length displayed. */
-        if (fseeko(fp, sbp->st_size, SEEK_SET) == -1) {
-            ierr(fn);
-            return;
-        }
-        if (map.start != NULL && munmap(map.start, map.maplen)) {
-            ierr(fn);
-            return;
-        }
+        fis.getChannel().position(file.length());
+
     }
 }
