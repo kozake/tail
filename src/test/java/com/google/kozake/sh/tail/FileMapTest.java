@@ -4,7 +4,6 @@ import org.junit.Test;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import static org.hamcrest.core.Is.is;
@@ -118,7 +117,7 @@ public final class FileMapTest {
         File file = new File("src/test/data/FileMapTest4MByte.txt");
         file.delete();
 
-        String dataStr = Stream.iterate(1, UnaryOperator.identity()).limit(4 << 20).reduce(
+        String dataStr = Stream.iterate(1, i -> i == 10 ? 1 : i++ % 10).limit(4 << 20).reduce(
                 new StringBuilder(),
                 (buff, i) -> {
                     buff.append(String.valueOf(i));
@@ -147,10 +146,15 @@ public final class FileMapTest {
             bos.reset();
             fileMap.print(0, 2, out);
             assertThat(bos.toByteArray().length, is(2));
-            assertThat(bos.toByteArray(), is("11".getBytes()));
+            assertThat(bos.toByteArray(), is("12".getBytes()));
 
             bos.reset();
             fileMap.print(0, 4 << 20, out);
+            assertThat(bos.toByteArray().length, is(4 << 20));
+            assertThat(bos.toByteArray(), is(dataStr.getBytes()));
+
+            bos.reset();
+            fileMap.print(0, (4 << 20) + 1, out);
             assertThat(bos.toByteArray().length, is(4 << 20));
             assertThat(bos.toByteArray(), is(dataStr.getBytes()));
 
@@ -161,10 +165,14 @@ public final class FileMapTest {
             bos.reset();
             fileMap.print(1, 1, out);
             assertThat(bos.toByteArray().length, is(1));
-            assertThat(bos.toByteArray(), is("1".getBytes()));
+            assertThat(bos.toByteArray(), is("2".getBytes()));
 
             bos.reset();
             fileMap.print(1, 4 << 20, out);
+            assertThat(bos.toByteArray().length, is((4 << 20) - 1));
+
+            bos.reset();
+            fileMap.print(1, (4 << 20) + 1, out);
             assertThat(bos.toByteArray().length, is((4 << 20) - 1));
 
             file.delete();
