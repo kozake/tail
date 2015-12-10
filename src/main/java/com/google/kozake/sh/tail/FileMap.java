@@ -3,6 +3,7 @@ package com.google.kozake.sh.tail;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.*;
 
 /**
@@ -104,22 +105,42 @@ public final class FileMap {
      * @throws IOException 入出力例外が発生したい場合
      */
     public void print(final long startOffset, final int len) throws IOException {
-        int outputLen;
+        print(startOffset, len, System.out);
+    }
+
+    /**
+     * 開始オフセットから指定長分のファイル値を、標準出力します。.
+     * @param startOffset 開始オフセット
+     * @param len 出力するバイト長
+     * @param out 出力ストリーム
+     * @throws IOException 入出力例外が発生したい場合
+     */
+    public void print(final long startOffset, final int len, final PrintStream out) throws IOException {
+
+        assert startOffset >= 0 : String.format("startOffset is invalied.[%d]", startOffset);
+        assert len >= 0 : String.format("len is invalied.[%d]", len);
+        assert out != null : "out is null.";
+
         int remaining = len;
         long offset = startOffset;
+
+        if (remaining > maxOffset - startOffset) {
+            remaining = (int) (maxOffset - startOffset);
+        }
 
         while (remaining > 0) {
             if (offset < currOffset || offset >= currOffset + remaining) {
                 // マップ範囲外の場合
                 around(offset);
             }
-            outputLen = (int) ((currOffset + remaining) - offset);
+            int outputLen = (int) ((currOffset + length) - offset);
             if (outputLen > remaining) {
                 outputLen = remaining;
             }
-            System.out.write(buff.array(), (int) (offset - currOffset), outputLen);
+            out.write(buff.array(), (int) (offset - currOffset), outputLen);
             offset += outputLen;
             remaining -= outputLen;
         }
+        out.flush();
     }
 }
