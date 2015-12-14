@@ -143,4 +143,41 @@ public final class FileMap {
         }
         out.flush();
     }
+
+    public void rlines(final long offset) throws IOException {
+
+        int i;
+
+        long size = file.length();
+        if (size == 0) {
+            return;
+        }
+
+    	/*
+    	 * Last char is special, ignore whether newline or not. Note that
+    	 * size == 0 is dealt with above, and size == 1 sets curoff to -1.
+	     */
+        long curoff = size - 2;
+        long off = offset;
+        while (curoff >= 0) {
+            if (curoff < getCurrOffset()) {
+                around(curoff);
+            }
+            for (i = (int) (curoff - getCurrOffset()); i >= 0; i--) {
+                if (read(i) == '\n' && --off == 0) {
+                    break;
+                }
+            }
+            if (i >= 0) {
+                break;
+            }
+            curoff = getCurrOffset() - 1;
+        }
+        curoff++;
+        print(curoff, (int) (size - curoff));
+
+    	/* Set the file pointer to reflect the length displayed. */
+        fis.getChannel().position(file.length());
+
+    }
 }
