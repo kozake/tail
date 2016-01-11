@@ -5,11 +5,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 
-public final class Tail {
+public final class TailTargetFile {
 
     private final File file;
 
-    public Tail(final File file) {
+    public TailTargetFile(final File file) {
         this.file = file;
     }
 
