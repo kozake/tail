@@ -9,7 +9,7 @@ import java.util.stream.Stream;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
-public class TailTargetFileTest {
+public class TailTargetTest {
 
     @Test
     public void test4MByte() throws IOException {
@@ -31,7 +31,10 @@ public class TailTargetFileTest {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PrintStream out = new PrintStream(bos);
 
-        TailTargetFile operation = new TailTargetFile(file);
-        operation.forwardAndPrint(Style.FBYTES, (4 << 20) - 20);
+        try (TailTarget target = TailTarget.open(file)) {
+            target.printfn(System.out, true);
+            target.forwardAndPrint(Style.FBYTES, (4 << 20) - 20);
+        }
         file.delete();
-    }}
+    }
+}

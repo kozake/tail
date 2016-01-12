@@ -1,16 +1,20 @@
 package com.google.kozake.sh.tail;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
 
-public final class TailTargetFile {
+public final class TailTarget implements Closeable {
 
     private final File file;
 
-    public TailTargetFile(final File file) {
+    private final FileInputStream fis;
+
+    private TailTarget(final File file) throws IOException {
         this.file = file;
+        this.fis = new FileInputStream(file);
+    }
+
+    public static TailTarget open(final File file) throws IOException {
+        return new TailTarget(file);
     }
 
     public void forwardAndPrint(final Style style, final long off) throws IOException {
@@ -18,16 +22,15 @@ public final class TailTargetFile {
     }
 
     public void forwardAndPrint(final Style style, final long off, final PrintStream out) throws IOException {
+        assert fis != null : "fis is null";
 
-        try (FileInputStream fis = new FileInputStream(file)) {
-            forward(fis, style, off);
+        forward(fis, style, off);
 
-            int ch;
-            while ((ch = fis.read()) != -1) {
-                out.write(ch);
-            }
-            out.flush();
+        int ch;
+        while ((ch = fis.read()) != -1) {
+            out.write(ch);
         }
+        out.flush();
     }
 
     private void forward(final FileInputStream fis, final Style style, final long off) throws IOException {
@@ -68,5 +71,35 @@ public final class TailTargetFile {
             default:
                 break;
         }
+    }
+
+    public void printfn(final PrintStream out, final boolean print_nl) {
+
+        if (print_nl) {
+            out.println();
+        }
+        out.println("==> " + file.getName() + " <==");
+    }
+
+    public boolean show(final PrintStream out, final boolean isPrintfn) throws IOException {
+        int ch;
+
+        boolean printedfn = false;
+        while ((ch = fis.read()) != -1) {
+
+            if (isPrintfn && !printedfn) {
+                printfn(out, true);
+                printedfn = true;
+            }
+            out.write(ch);
+        }
+        out.flush();
+
+        return printedfn;
+    }
+
+    @Override
+    public void close() throws IOException {
+        fis.close();
     }
 }
